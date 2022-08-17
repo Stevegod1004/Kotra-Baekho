@@ -185,8 +185,8 @@ def baekho_detail(request, pk):
         CSV_PATH = "../baekho/result_vi.csv"    
 
     elif (pk==5): # 호주 
-        CSV_PATH = "../baekho/"+australia()
-        #CSV_PATH = "../baekho/result_au.csv"
+        # CSV_PATH = "../baekho/"+australia()
+        CSV_PATH = "../baekho/result_au.csv"
     
     make_context(CSV_PATH)
 
@@ -399,7 +399,8 @@ def vietnam():
     ##############################################################
 
     #chrome_driver_path = './chromedriver.exe'
-    chrome_driver_path = 'C:\py_temp/chromedriver.exe'
+    chrome_driver_path = 'chromedriver.exe'
+
     options = webdriver.ChromeOptions()
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_argument("disable-blink-features=AutomationControlled") #selenium 엿먹이는 코드 다시 엿먹이기
@@ -678,7 +679,7 @@ def china():
     from selenium.webdriver.support import expected_conditions as EC
     import time
     #chrome_driver_path = './chromedriver.exe'
-    chrome_driver_path = 'C:\py_temp/chromedriver.exe'
+    chrome_driver_path = 'chromedriver.exe'
     options = webdriver.ChromeOptions()
 
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
@@ -982,7 +983,7 @@ def australia():
     from selenium.webdriver.support import expected_conditions as EC
     import time
 
-    chrome_driver_path = 'C:\py_temp/chromedriver.exe'
+    chrome_driver_path = 'chromedriver.exe'
     options = webdriver.ChromeOptions()
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_argument("disable-blink-features=AutomationControlled") #selenium 엿먹이는 코드 다시 엿먹이기
