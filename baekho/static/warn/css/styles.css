@@ -11325,9 +11325,12 @@ body {
   min-width: 0;
 }
 
+
+/* 
+성보오빠한테 여기지우라고 말해주기.. 0817
 #layoutSidenav {
   display: flex;
-}
+} */
 #layoutSidenav #layoutSidenav_nav {
   flex-basis: 225px;
   flex-shrink: 0;
@@ -11360,6 +11363,7 @@ body {
   }
   #layoutSidenav #layoutSidenav_content {
     margin-left: 0;
+    margin-right: 0;
     transition: margin 0.15s ease-in-out;
   }
 
