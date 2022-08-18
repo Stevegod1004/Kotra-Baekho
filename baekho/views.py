@@ -37,6 +37,7 @@ import warnings
 import pickle
 from pdfminer.high_level import extract_pages
 from pdfminer.layout import LTTextContainer
+import os
 
 def update_csv():
     # 원래 csv 삭제하고 새로 
@@ -1137,6 +1138,12 @@ def australia():
     result.to_csv('./result_au.csv', index=False)
 
     print('done')
+
+
+    dir = '../baekho'
+    for f in os.listdir(dir):
+        if f.lower().endswith('.pdf'):
+            os.remove(os.path.join(dir, f))
 
     return 'result_au.csv'
 
