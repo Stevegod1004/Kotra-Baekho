@@ -54,7 +54,7 @@ from email.utils import formataddr
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-def send_mail(): # 일단 호주 끝
+def send_mail():
     def mail(country, CSV_PATH): 
         from_addr = formataddr(("백호", "mink1414@naver.com"))
         to_addr = formataddr(("코트라", "simsong88@naver.com"))
@@ -83,7 +83,7 @@ def send_mail(): # 일단 호주 끝
             # SMTP 계정 인증 설정
             session.ehlo()
             session.starttls()
-            session.login("mink1414@naver.com", "min20903")
+            session.login("mmm@naver.com", "mmmm") ### 이 부분 지금 오류나는데 실행할 때 이메일, 비밀번호 올바르게 넣어주면 됨
 
             # 매일 콘텐츠 설정
             message = MIMEMultipart("alternative")
@@ -120,124 +120,54 @@ def send_mail(): # 일단 호주 끝
     # 1) 새로운게 올라왔는지
     # 2) 올라왔으면 hs코드 검출이 됐는지
 
-    # 중국 
-    cn_file = open("result_cn.csv", encoding="utf8")
-    reader = csv.reader(cn_file)
-    next(reader, None) 
-    cnt = 0 
-    for row in reader:
-        if (cnt==0): 
-            cn_last_title = row[2]
-        cnt += 1
-    print("cn_last_title:",cn_last_title)
+    def save_last_title(CSV_PATH):
+        file = open(CSV_PATH, encoding="utf8")
+        reader = csv.reader(file)
+        next(reader, None) 
+        cnt = 0 
+        for row in reader:
+            if (cnt==0): 
+                last_title = row[2]
+            cnt += 1
+        return last_title
 
-    # 베트남
-    vi_file = open("result_vi.csv", encoding="utf8")
-    reader = csv.reader(vi_file)
-    next(reader, None) 
-    cnt = 0 
-    for row in reader:
-        if (cnt==0): 
-            vi_last_title = row[2]
-        cnt += 1
-    print("vi_last_title:",vi_last_title)
-
-    # 호주 
-    au_file = open("result_au.csv", encoding="utf8")
-    reader = csv.reader(au_file)
-    next(reader, None) 
-    cnt = 0 
-    for row in reader:
-        if (cnt==0): 
-            au_last_title = row[2]
-        cnt += 1
-    print("au_last_title:",au_last_title)
-
-    # 크롤링 스케줄러 돌리기
+    # 크롤링 스케줄러 돌리기 - 멀티쓰레드 x
     china()
     vietnam()
     australia()
 
-    # 중국
-    print("중국 비교 시작..,")
-    cn_file = open("result_cn.csv", encoding="utf8")
-    cn_send = False 
-    reader = csv.reader(cn_file)
-    next(reader, None)
-    cnt = 0
-    for row in reader:
-        if (cnt==0):
-            cn_now_title = row[2]
-            cn_ngram = row[7]
-        cnt += 1
-    print("cn_now_title:",cn_now_title)
+    # 함수 정의 - CSV_PATH, "중국" 
+    def compare_last_now(country, CSV_PATH):
+        print("비교 시작..,")
+        file = open(CSV_PATH, encoding="utf8")
+        isSend = False 
+        reader = csv.reader(file)
+        next(reader, None)
+        cnt = 0
+        for row in reader:
+            if (cnt==0):
+                now_title = row[2]
+                ngram = row[7]
+            cnt += 1
+        print("now_title:",now_title)
 
-    if (cn_last_title != cn_now_title):
-        print("cn_last:",cn_last_title) 
-        print("cn_now:", cn_now_title)
-        if (cn_ngram != "['None']"):
-            cn_send=True
-            print("==메일 보내기 성공==")
-        else: 
-            print("==메일 안보내기(사유: hscode가 None임)==")
-    else:
-        print("==메일 안보내기(사유: 새로올라온거없음)==")
+        last_title = save_last_title(CSV_PATH)
+        if (last_title != now_title):
+            print("last:",last_title) 
+            print("now:", now_title)
+            if (ngram != "['None']"):
+                isSend=True
+                mail(country, CSV_PATH)
+                print("==메일 보내기 성공==")
+            else: 
+                print("==메일 안보내기(사유: hscode가 None임)==")
+        else:
+            print("==메일 안보내기(사유: 새로올라온거없음)==")
+        return 
 
-    if (cn_send): mail("중국", "result_cn.csv")
-
-    # 베트남 
-    print("베트남 비교 시작..,")
-    vi_file = open("result_vi.csv", encoding="utf8")
-    vi_send = False 
-    reader = csv.reader(vi_file)
-    next(reader, None)
-    cnt = 0
-    for row in reader:
-        if (cnt==0):
-            vi_now_title = row[2]
-            vi_ngram = row[7]
-        cnt += 1
-    print("vi_now_title:",vi_now_title)
-
-    if (vi_last_title != vi_now_title):
-        print("vi_last:",vi_last_title) 
-        print("vi_now:", vi_now_title)
-        if (vi_ngram != "['None']"):
-            vi_send=True
-            print("==메일 보내기 성공==")
-        else: 
-            print("==메일 안보내기(사유: hscode가 None임)==")
-    else:
-        print("==메일 안보내기(사유: 새로올라온거없음)==")
-
-    if (vi_send): mail("베트남", "result_vi.csv")
-   
-    # 호주
-    print("호주 비교 시작..,")
-    au_file = open("result_au.csv", encoding="utf8")
-    au_send = False 
-    reader = csv.reader(au_file)
-    next(reader, None)
-    cnt = 0
-    for row in reader:
-        if (cnt==0):
-            au_now_title = row[2]
-            au_ngram = row[7]
-        cnt += 1
-    print("au_now_title:",au_now_title)
-
-    if (au_last_title != au_now_title):
-        print("au_last:",au_last_title) 
-        print("au_now:", au_now_title)
-        if (au_ngram != "['None']"):
-            au_send=True
-            print("==메일 보내기 성공==")
-        else: 
-            print("==메일 안보내기(사유: hscode가 None임)==")
-    else:
-        print("==메일 안보내기(사유: 새로올라온거없음)==")
-
-    if (au_send): mail("호주", "result_au.csv")
+    compare_last_now("중국", "result_cn.csv") 
+    compare_last_now("베트남", "result_vi.csv")
+    compare_last_now("호주", "result_au.csv") 
 
     return 
 
@@ -323,6 +253,8 @@ def baekho_detail(request, pk):
                                     
                                     txt_eng = row[13],
                                     txt = row[14],
+                                    korea = True,
+                                    export = True,
                                     ))                        
             HeadOffice.objects.bulk_create(list)
 

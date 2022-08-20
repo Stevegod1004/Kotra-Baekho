@@ -38,6 +38,8 @@ class HeadOffice(models.Model):
     img = models.ImageField(null=True)
     country = models.CharField(max_length=10, default=" ")
     country_eng = models.CharField(max_length=10, default=" ")
+    korea = models.BooleanField(default=False)
+    export = models.BooleanField(default=False)
 
     word1_ngram = models.CharField(max_length=100, default="NaN")
     word1_code = models.CharField(max_length=100, default="NaN")

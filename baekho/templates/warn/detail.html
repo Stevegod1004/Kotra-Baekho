@@ -56,6 +56,8 @@
                 border-bottom: 1px solid gray;
                 word-break: break-all;
             }
+            
+
 
         </style>
 
@@ -98,19 +100,19 @@
                                 <i class="fas fa-table me-1"></i>
                                 최근 고시정보
                             </div>
-                            <div class="card-body">
+                            <div  class="card-body">
                                 <table id="datatablesSimple">
                                     
-
-                                        {% for o in opening %}
-
-
-                                            <li><a href="{{o.number}}">{{o.title}}</a><div id="right-box">{{o.date}}</div> </li>
+                                    {% for o in opening %}
+                                        
+                                
+                                            {{o.number}}. <a href="{{o.number}}">{{o.title}}</a><div id="right-box">{{o.date}}</div>
+                                            
                                             <br>
 
                                             {% if o.word1_ngram != "None" %}
 
-                                            <table width="100%" style="margin-left: auto; margin-right: auto;" >
+                                            <table width="95%" style="margin-left: auto; margin-right: auto; margin-top: 20px;" >
                                                 <thead>
                                                     <tr><th scope="col">bigram</th><th scope="col">hscode</th><th scope="col">name</th><th scope="col">sim</th></tr>
                                                 </thead>
@@ -141,19 +143,46 @@
                                                     </tbody>         
                                                 
                                             </table>
+                                            
 
                                             {% else %}
 
-                                            <center> <h5>이 고시에서 {{country.name}}의 무역 의존도가 높은 품목이 검출되지 않았습니다.</h5> </center>
+                                            <center> <h5 style="margin-top: 20px; margin-bottom: 10p">이 고시에서 {{country.name}}의 무역 의존도가 높은 품목이 검출되지 않았습니다.</h5> </center>
+
+                                            {% endif %}
+                                        
+                                            
+                                            <center>
+                                            
+                                            {% if o.korea == True %} 
+                                            <h5> 
+                                                해당 고시에서 <span style="color: red">'한국'</span>이 언급되었습니다.
+                                                주의깊게 볼 필요가 있습니다.
+                                            </h5>
+                                            {% else %}
 
                                             {% endif %}
 
+
+                                            {% if o.korea == True %} 
+                                            <h5> 
+                                                해당 고시는 <span style="color: red">'수출 규제'</span>와 연관된 내용을 담고 있습니다.
+                                                주의깊게 볼 필요가 있습니다. 
+                                            </h5>
+                                            {% else %}
+
+                                            {% endif %}
+                                        </div>
+                                    </center>
+
                                             <hr>
+                                        
                                         {% endfor %}
+                                    
                                     
                                 </table>
 
-                                
+                            
                                 
                             </div>
                         </div>

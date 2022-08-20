@@ -5,7 +5,7 @@ from .views import send_mail, china, usa, japan, vietnam, australia
 def start():
     scheduler=BackgroundScheduler(timezone="Asia/Seoul")
 
-    # scheduler.add_job(send_mail, "cron", hour=14, minute=58)
+    scheduler.add_job(send_mail, "cron", hour=16, minute=8)
 
     print("==스케줄러 시작==")
     scheduler.start()
