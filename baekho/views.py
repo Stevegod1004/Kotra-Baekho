@@ -8,7 +8,7 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from datetime import datetime
 from django.http import Http404
-from baekho.models import Country, Opening, HeadOffice
+from baekho.models import Country, Industry, Opening, HeadOffice
 import csv
 import pandas as pd
 from selenium import webdriver
@@ -47,13 +47,150 @@ from konlpy.tag import Okt
 from PIL import Image
 from keybert import KeyBERT
 
-def update_csv():
-    # 원래 csv 삭제하고 새로 
-    print("==스케줄러 시작==")
-    today = datetime.date.today()
+from django.core.mail import EmailMessage
+from django.template.loader import render_to_string
+import smtplib
+from email.utils import formataddr
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
+def send_mail():
+    def mail(country, CSV_PATH): 
+        from_addr = formataddr(("백호", "mink1414@naver.com"))
+        to_addr = formataddr(("코트라", "simsong88@naver.com"))
+
+        session = None 
+
+        # {중국} {2022-08-20} 고시에서 {Vessels for the transport of goods, Vessels for the transport of both persons and goods}({890190}) 이 검출되었습니다.
+        # {url}
+
+        # title, date, name, hscode, url 
+        file = open(CSV_PATH, encoding="utf8")
+        reader = csv.reader(file)
+        next(reader, None)
+        for row in reader: 
+            title = row[2]
+            date = row[3]
+            name = row[9]
+            hscode = row[8]
+
+        print("==info:",title, date, name, hscode )
+        try:
+            # SMTP 세션 생성
+            session = smtplib.SMTP("smtp.naver.com", 587)
+            session.set_debuglevel(True)
+
+            # SMTP 계정 인증 설정
+            session.ehlo()
+            session.starttls()
+            session.login("mink1414@naver.com", "min20903")
+
+            # 매일 콘텐츠 설정
+            message = MIMEMultipart("alternative")
+
+            # 메일 송/수신 옵션 설정
+            message.set_charset("utf-8")
+            message["From"] = from_addr
+            message["To"] = to_addr
+            message["Subject"] = "[데청캠 백호-KOTRA] 알람입니다."
+
+            # 메일 콘텐츠 내용
+            # {중국} {2022-08-20} 고시에서 {Vessels for the transport of goods, Vessels for the transport of both persons and goods}({890190}) 이 검출되었습니다.
+           
+            body = country +" "+ title + " ("+date +") 고시에서 "+name+" ("+hscode+") 이 검출되었습니다." 
+            # body = '''
+            # <p>테스트용 메일입니다.. 무시하세요..</p>
+            # '''
+
+            bodyPart = MIMEText(body, "html", "utf-8")
+            message.attach(bodyPart)
+
+            # 메일 발송
+            session.sendmail(from_addr, to_addr, message.as_string())
+
+            print("Successfully sent the mail!!!")
+        except Exception as e:
+            print(e)
+
+        finally:
+            if session is not None:
+                session.quit()
+        return 
+
+    # 1) 새로운게 올라왔는지
+    # 2) 올라왔으면 hs코드 검출이 됐는지
+
+    # cn_file = open("result_cn.csv", encoding="utf8")
+    # reader = csv.reader(cn_file)
+    # next(reader, None)
+    # for row in reader:
+    #     cn_last_title = row[2]
+
+    # vi_file = open("result_vi.csv", encoding="utf8")
+    # reader = csv.reader(vi_file)
+    # next(reader, None)
+    # for row in reader:
+    #     vi_last_title = row[2]
+
+    # au_file = open("result_au.csv", encoding="utf8")
+    # reader = csv.reader(au_file)
+    # next(reader, None)
+    # for row in reader:
+    #     au_last_title = row[2]
+
+    # 크롤링 스케줄러돌리기
+    # china()
     # vietnam()
-    print("==스케줄러 완료==")
+    # australia()
+
+    # # 중국 
+    # cn_file = open("result_cn.csv", encoding="utf8")
+    # reader = csv.reader(cn_file)
+    # next(reader, None)
+    # for row in reader:
+    #     cn_now_title = row[2]
+    #     cn_ngram = row[7]
+
+    # if (cn_last_title != cn_now_title): 
+    #     if (cn_ngram != "None"):
+    #         cn_send=True
+        
+
+    # # 베트남 
+    # vi_file = open("result_vi.csv", encoding="utf8")
+    # reader = csv.reader(vi_file)
+    # next(reader, None)
+    # for row in reader:
+    #     vi_now_title = row[2]
+    #     vi_ngram = row[7]
+
+    # if (vi_last_title != vi_now_title): 
+    #     if (vi_ngram != "None"):
+    #         vi_send=True
+
+    # 호주
+    au_file = open("result_au.csv", encoding="utf8")
+    reader = csv.reader(au_file)
+    next(reader, None)
+    for row in reader:
+        au_now_title = row[2]
+        au_ngram = row[7]
+    
+    au_send = True 
+
+    # if (au_last_title != au_now_title): 
+    #     if (au_ngram != "None"):
+    #         au_send=True
+
+    # if (cn_send): mail("중국", "result_cn.csv")
+
+    # if (vi_send): mail("베트남", "result_vi.csv")
+
+    if (au_send): mail("호주", "result_au.csv")
+
+    
+
+    return 
 
 def baekho_detail(request, pk):
 
@@ -66,7 +203,7 @@ def baekho_detail(request, pk):
     now = datetime.datetime.now()
     print("======현재시간:",now,"=====")
 
-    def make_context(CSV_PATH, name):
+    def make_context(CSV_PATH, name, name_eng):
             records = HeadOffice.objects.all()
             records.delete()
 
@@ -76,14 +213,6 @@ def baekho_detail(request, pk):
             list = []
             cnt = 0
 
-
-            # 검출된 것이 없음 = "['None']" len(1)
-            #["obej", " "]
-            # 검출된 것이 하나 이상 = "['Obej', 'Obej', 'Obej']"
-
-            # str_to_list 거치면 어떻게 되느냐
-            # -> ['None']
-            # -> ['Obej', 'Obej', 'Obej']
             def str_to_list(txt):
                 ret = []
                 tmp = txt.replace('[', '').replace(']', '').replace(" '", '||').replace("'", '').split(',||')
@@ -102,63 +231,10 @@ def baekho_detail(request, pk):
                 
                 print(row[0]+"번째 출력\n")
 
-                # ngram_list = row[7].split("||")
-                # code_list = row[8].split("||")
-                # name_list = row[9].split("||")
-                # sim_list = row[10].split("||")
-
                 ngram_list = str_to_list(row[7])
                 code_list = str_to_list(row[8])
                 name_list = str_to_list(row[9])
                 sim_list = str_to_list(row[10])
-
-                # print("==데이터전처리전==")        
-                # print("ngram_list:",ngram_list)
-                # print("code_list:",code_list)
-                # print("name_list:",name_list)
-                # print("sim_list:",sim_list)
-
-                # if len(ngram_list) == 1:
-                #     # ngram_list[0] = "NaN"
-                #     # code_list[0] = "NaN"
-                #     # name_list[0] = "NaN"
-                #     # sim_list[0] = "NaN"
-
-                #     for i in range(3):
-                #         ngram_list.append(" ")
-                #         code_list.append(" ")
-                #         name_list.append(" ")
-                #         sim_list.append(" ")
-                
-
-                # elif len(ngram_list) == 2:
-                #     ngram_list[1] = ""
-                #     code_list[1] = ""
-                #     name_list[1] = ""
-                #     sim_list[1] = ""
-
-                #     for i in range(2):
-                #         ngram_list.append(" ")
-                #         code_list.append(" ")
-                #         name_list.append(" ")
-                #         sim_list.append(" ")
-
-                # elif len(ngram_list) == 3:
-                #     ngram_list[2] = ""
-                #     code_list[2] = ""
-                #     name_list[2] = ""
-                #     sim_list[2] = ""
-
-                #     ngram_list.append(" ")
-                #     code_list.append(" ")
-                #     name_list.append(" ")
-                #     sim_list.append(" ")
-                        
-                # elif len(ngram_list) == 4:
-                #     ngram_list[3] = ""
-                #     code_list[3] = ""
-                #     name_list[3] = ""
-                #     sim_list[3] = ""
 
                 print("==데이터전처리후==")
                 print("ngram_list:",ngram_list)
@@ -172,8 +248,9 @@ def baekho_detail(request, pk):
                                     title=row[2],
                                     date=row[3], 
                                     url=row[12],
-                                    img="/static/warn/image/"+str(name)+"-au"+str(cnt)+".png",
+                                    img="/static/warn/image/"+str(name)+"-"+str(cnt)+".png",
                                     country=name,
+                                    country_eng = name_eng,
                                     
                                     word1_ngram=ngram_list[0], 
                                     word1_code=code_list[0],
@@ -209,36 +286,73 @@ def baekho_detail(request, pk):
         #CSV_PATH = china()
         CSV_PATH = "../baekho/result_cn.csv" 
         country = "중국"
+        country_eng = "cn"
 
     elif (pk==2): # 미국
         CSV_PATH = japan()
         # CSV_PATH = "result_cn.csv.part"
         country = "미국"
+        country_eng = "us"
         
     elif (pk==3): # 일본
         CSV_PATH = japan()
         # CSV_PATH = 
         country = "일본"
+        country_eng = "ja"
 
     elif (pk==4): # 베트남 
-        #CSV_PATH = "../baekho/" + vietnam()
+        # CSV_PATH = "../baekho/" + vietnam()
         CSV_PATH = "../baekho/result_vi.csv"   
         country = "베트남" 
+        country_eng = "vi"
 
     elif (pk==5): # 호주 
         #CSV_PATH = "../baekho/" + australia()
         CSV_PATH = "../baekho/result_au.csv"
         country = "호주"
+        country_eng = "au"
     
-    make_context(CSV_PATH, country)
+    make_context(CSV_PATH, country, country_eng)
 
     return render(request, 'warn/detail.html', context=context)
 
 def subpage(request, pk, title):
+    records = Industry.objects.all()
+    records.delete()
 
     context = dict() 
     info = HeadOffice.objects.get(number=title)
     context["info"] = info
+
+    country_eng = info.country_eng
+    number = info.number
+    file = open("find_"+country_eng+"_"+str(number)+".csv", encoding="utf8")
+    reader = csv.reader(file)
+    
+    next(reader, None)
+    list = []
+    
+    
+
+    for row in reader:
+        print("row 2: ",row[2])
+        print("row 3: ",row[3])
+
+        if len(row[2]) == 5:
+            row[2] = "0"+row[2]
+
+        list.append(Industry(
+            hscode = row[0],
+            hscode_name = row[1],
+            KSIC10 = row[2],
+            KSIC10_name = row[3], 
+        ))
+
+        Industry.objects.bulk_create(list)
+
+        industry = Industry.objects.all()
+        context["industry"] = industry
+
 
     return render(request, "warn/subpage.html", context=context)
 
@@ -346,13 +460,62 @@ def vietnam():
 
         ret += splited_txt[2] + '년 ' + splited_txt[1] + '월 ' + splited_txt[0] + "일 게시"
         return ret
+    
+    def make_ind_table(ind_hs_path=None, country_path=None, find_path=None,country=None): #입력값 없어도 실행하기 위해 None값을 줌
+        i_path = ind_hs_path + 'ind_hs_code.csv'
+        ind_hs_code = pd.read_csv(i_path, encoding='cp949')
+        find_table = ind_hs_code.copy().iloc[:, [9,10,7,8]].astype(str) #관련산업군 데이터 추출
+        
+        for i, c in enumerate(find_table[' HS2017_CD']):
+            if len(c) == 5: #0부터 시작하는 산업 코드 체크
+                c = '0'+c
+                find_table[' HS2017_CD'][i] = c
+
+        def make_find_table(finded, find_table):
+            ret = pd.DataFrame(columns=[' HS2017_CD', ' HS2017_KO_NM', ' KSIC10_CD', ' KSIC10_KO_NM'])
+            for t in finded:
+                for index, f in enumerate(find_table[' HS2017_CD']):
+                    if t == f:
+                        find = find_table.iloc[index, :]
+                        ret = ret.append(find, ignore_index = True)
+            ret = ret.drop_duplicates(keep = 'first')
+            
+            if len(ret) == 0:
+                ret = pd.DataFrame([['None','None','None','None']],columns=[' HS2017_CD', ' HS2017_KO_NM', ' KSIC10_CD', ' KSIC10_KO_NM'])
+            return ret
+
+        c_path = country_path + 'result_' +country +'.csv'
+        test_result = pd.read_csv(c_path).iloc[:, [11, 8]]
+        #make_ind_table('','','','') #ind_hs코드 패쓰, reult_나라.csv파일 패쓰, find_나라.csv 다운받을 경로, 나라이름
+        #make_ind_table('', '../result/', '../find/', 'au')
+        a = test_result['본문에 진짜 코드']
+        b = test_result['hs코드']
+
+        def str_to_list(txt):
+            ret = []
+            tmp = txt.replace('[', '').replace(']', '').replace(" '", '').replace("'", '').split(',')
+            for t in tmp:
+                ret.append(t)
+            return ret
+
+        for i, t1, t2 in zip(range(1,6), a, b):
+            if 'None' not in t1:
+                ls = str_to_list(t1)
+                path = find_path + 'find_' + country+'_' + str(i) + '.csv'
+                make_find_table(ls, find_table).to_csv(path, index=False)
+            else:
+                ls = str_to_list(t2)
+                path = find_path + 'find_' + country+'_' + str(i) + '.csv'
+                make_find_table(ls, find_table).to_csv(path, index=False)
+        
+    make_ind_table('', '', '', 'vi')     
 
     ##############################################################
     ## 크롤링 파트
     ##############################################################
 
     #chrome_driver_path = './chromedriver.exe'
-    chrome_driver_path = '../baekho/chromedriver.exe'
+    chrome_driver_path = 'chromedriver.exe'
     options = webdriver.ChromeOptions()
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_argument("disable-blink-features=AutomationControlled") #selenium 엿먹이는 코드 다시 엿먹이기
@@ -436,15 +599,23 @@ def vietnam():
     print("======키워드 요약 시작=====")
     from keybert import KeyBERT
 
-    keywords_list = []
-    kw_model = KeyBERT()
-    for t in contents_tr:
-        k = []
-        p = re.sub(r"[^a-zA-Z ]","",t) #영어랑 띄어쓰기만 살리고 나머지 특수기호 등 다 제거
-        keywords = kw_model.extract_keywords(p, keyphrase_ngram_range=(3,3), stop_words=set(vt_sw), top_n=10, diversity=0.9) #트라이그램 유사도 상위 10개 품목
-        for keyword in keywords:
-            k.append(keyword[0])
-        keywords_list.append(k)
+    keywords_list = [' ',' ',' ',' ',' ']
+    kw_model = KeyBERT(model=model)
+    for i, t in enumerate(contents_tr):
+        k = ''
+        p = rid_sc(t)
+        # use_mmr True 후 diversity로 나오는 친구들 다양성 조정
+        # 마찬가지로 stop_words도 국가별로 바꿔주면 됨.
+        keywords = kw_model.extract_keywords(p, keyphrase_ngram_range=(3,3), stop_words=vt_sw, top_n=5, use_mmr=True,diversity=0.55)
+        for j, keyword in enumerate(keywords):
+            tmp = keyword[0].replace(' ', '_')
+            for jj in range(10-j*2):
+                k += tmp + ' '
+        cloud = WordCloud(prefer_horizontal=1,background_color='white',width=1200, height=200).generate(k)
+
+        # 저장할 때 국가 이름을 바꿔주면 된다. (ex, 호주-au, 중국-cn, 베트남-vi, 미국-us, 일본-ja)
+        # 저장할 때 경로 알아서 바꾸셈
+        cloud.to_file('./baekho/static/warn/image/'+"베트남-"+str(i+1)+'.png')
 
     ##############################################################
     ## 키워드 hscode 비교 파트
@@ -517,19 +688,35 @@ def vietnam():
         real_codes.append(ls)
 
     ##############################################################
+    ## 요약본 만들기
+    ##############################################################
+    from transformers import pipeline
+    summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
+    summarizes, summarizes_tr = [], []
+    print('summarizing...')
+    for sum_content in contents_tr: #베트남 내용 영어로 바꾼것
+        if len(sum_content) > 4000:
+            sum_content = sum_content[:4000]
+        summ = summarizer(sum_content, max_length=130, min_length=30, do_sample=False)
+        summ_tr = translator.translate(summ[0]['summary_text'], src='en', dest="ko")
+        summarizes.append(summ[0]['summary_text']) #요약 영어
+        summarizes_tr.append(summ_tr.text) #요약 한국어
+
+
+    ##############################################################
     ##결과물 만들기 파트
     ##############################################################
     print("======csv 저장=====")
     nums = range(1, len(titles)+1)
     rows = []
-    for a,b,c,d,e,f,g,h,i,j,k,l,m in zip(nums, titles, titles_tr ,dates, contents, contents_tr, keywords_list, ngrams, codes, names, sims, real_codes, links):
-        row= [a,b,c,d,e,f,g,h,i,j,k,l,m]
+    for a,b,c,d,e,f,g,h,i,j,k,l,m,n,o in zip(nums, titles, titles_tr ,dates, contents, contents_tr, keywords_list, ngrams, codes, names, sims, real_codes, links, summarizes, summarizes_tr):
+        row= [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o]
         rows.append(row)
 
-    result = pd.DataFrame(rows, columns=['번호','제목','제목(한국어번역)','날짜','내용','내용(영어번역)','키워드 요약','일치 키워드','hs코드','품목','유사도','본문에 진짜 코드','링크'])
+    result = pd.DataFrame(rows, columns=['번호','제목','제목(한국어번역)','날짜','내용','내용(영어번역)','키워드 요약','일치 키워드','hs코드','품목','유사도','본문에 진짜 코드','링크','요약본(영어)','요약본(한국어)'])
     path = "result_vi.csv"
     result.to_csv('./result_vi.csv', index=False)
-    print("======베트남 크롤링 완료=====")
+    print("======베트남완료=====")
 
     ##############################################################
     ##############################################################
@@ -648,6 +835,67 @@ def china():
         ret += splited_txt[0] + '년 ' + splited_txt[1] + '월 ' + splited_txt[2] + "일 게시"
         return ret
 
+    def make_dates_vi(txt):
+        splited_txt = txt.split(' ')[0].split('/')
+        ret=''
+        if splited_txt[0].startswith('0'):
+            splited_txt[0] = splited_txt[0][1:]
+
+        if splited_txt[1].startswith('0'):
+            splited_txt[1] = splited_txt[1][1:]
+
+        ret += splited_txt[2] + '년 ' + splited_txt[1] + '월 ' + splited_txt[0] + "일 게시"
+        return ret
+
+    def make_ind_table(ind_hs_path=None, country_path=None, find_path=None,country=None): #입력값 없어도 실행하기 위해 None값을 줌
+        i_path = ind_hs_path + 'ind_hs_code.csv'
+        ind_hs_code = pd.read_csv(i_path, encoding='cp949')
+        find_table = ind_hs_code.copy().iloc[:, [9,10,7,8]].astype(str) #관련산업군 데이터 추출
+        
+        for i, c in enumerate(find_table[' HS2017_CD']):
+            if len(c) == 5: #0부터 시작하는 산업 코드 체크
+                c = '0'+c
+                find_table[' HS2017_CD'][i] = c
+
+        def make_find_table(finded, find_table):
+            ret = pd.DataFrame(columns=[' HS2017_CD', ' HS2017_KO_NM', ' KSIC10_CD', ' KSIC10_KO_NM'])
+            for t in finded:
+                for index, f in enumerate(find_table[' HS2017_CD']):
+                    if t == f:
+                        find = find_table.iloc[index, :]
+                        ret = ret.append(find, ignore_index = True)
+            ret = ret.drop_duplicates(keep = 'first')
+            
+            if len(ret) == 0:
+                ret = pd.DataFrame([['None','None','None','None']],columns=[' HS2017_CD', ' HS2017_KO_NM', ' KSIC10_CD', ' KSIC10_KO_NM'])
+            return ret
+
+        c_path = country_path + 'result_' +country +'.csv'
+        test_result = pd.read_csv(c_path).iloc[:, [11, 8]]
+        #make_ind_table('','','','') #ind_hs코드 패쓰, reult_나라.csv파일 패쓰, find_나라.csv 다운받을 경로, 나라이름
+        #make_ind_table('', '../result/', '../find/', 'au')
+        a = test_result['본문에 진짜 코드']
+        b = test_result['hs코드']
+
+        def str_to_list(txt):
+            ret = []
+            tmp = txt.replace('[', '').replace(']', '').replace(" '", '').replace("'", '').split(',')
+            for t in tmp:
+                ret.append(t)
+            return ret
+
+        for i, t1, t2 in zip(range(1,6), a, b):
+            if 'None' not in t1:
+                ls = str_to_list(t1)
+                path = find_path + 'find_' + country+'_' + str(i) + '.csv'
+                make_find_table(ls, find_table).to_csv(path, index=False)
+            else:
+                ls = str_to_list(t2)
+                path = find_path + 'find_' + country+'_' + str(i) + '.csv'
+                make_find_table(ls, find_table).to_csv(path, index=False)
+
+    make_ind_table('', '', '', 'cn')  
+
     ##############################################################
     ## 크롤링 파트
     ##############################################################
@@ -656,7 +904,7 @@ def china():
     from selenium.webdriver.support import expected_conditions as EC
     import time
     #chrome_driver_path = './chromedriver.exe'
-    chrome_driver_path = '../baekho/chromedriver.exe'
+    chrome_driver_path = 'chromedriver.exe'
     options = webdriver.ChromeOptions()
 
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
@@ -741,18 +989,26 @@ def china():
     ##############################################################
     ## 키버트 키워드 요약 파트
     ##############################################################
-
+    print("======키워드 요약 시작=====")
     from keybert import KeyBERT
 
-    keywords_list = []
-    kw_model = KeyBERT()
-    for t in contents_tr:
-        k = []
-        p = re.sub(r"[^a-zA-Z ]","",t) #영어랑 띄어쓰기만 살리고 나머지 특수기호 등 다 제거
-        keywords = kw_model.extract_keywords(p, keyphrase_ngram_range=(3,3), stop_words=set(cn_sw), top_n=10, diversity=0.9, use_mmr=True) #트라이그램 유사도 상위 10개 품목
-        for keyword in keywords:
-            k.append(keyword[0])
-        keywords_list.append(k)
+    keywords_list = [' ',' ',' ',' ',' ']
+    kw_model = KeyBERT(model=model)
+    for i, t in enumerate(contents_tr):
+        k = ''
+        p = rid_sc(t)
+        # use_mmr True 후 diversity로 나오는 친구들 다양성 조정
+        # 마찬가지로 stop_words도 국가별로 바꿔주면 됨.
+        keywords = kw_model.extract_keywords(p, keyphrase_ngram_range=(3,3), stop_words=cn_sw, top_n=5, use_mmr=True,diversity=0.55)
+        for j, keyword in enumerate(keywords):
+            tmp = keyword[0].replace(' ', '_')
+            for jj in range(10-j*2):
+                k += tmp + ' '
+        cloud = WordCloud(prefer_horizontal=1,background_color='white',width=1200, height=200).generate(k)
+
+        # 저장할 때 국가 이름을 바꿔주면 된다. (ex, 호주-au, 중국-cn, 베트남-vi, 미국-us, 일본-ja)
+        # 저장할 때 경로 알아서 바꾸셈
+        cloud.to_file('./baekho/static/warn/image/'+"중국-"+str(i+1)+'.png')
 
     ##############################################################
     ## 키워드 hscode 비교 파트
@@ -838,17 +1094,32 @@ def china():
             ls.append('None')
         real_codes.append(ls)
 
-    ##############################################################
-    ##결과물 만들기 파트
-    ##############################################################
+##############################################################
+## 요약본 만들기
+##############################################################
+    from transformers import pipeline
+    summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
+    summarizes, summarizes_tr = [], []
+    print('summarizing...')
+    for sum_content in contents_tr: #베트남 내용 영어로 바꾼것
+        if len(sum_content) > 4000:
+            sum_content = sum_content[:4000]
+        summ = summarizer(sum_content, max_length=130, min_length=30, do_sample=False)
+        summ_tr = translator.translate(summ[0]['summary_text'], src='en', dest="ko")
+        summarizes.append(summ[0]['summary_text']) #요약 영어
+        summarizes_tr.append(summ_tr.text) #요약 한국어
+
+##############################################################
+##결과물 만들기 파트
+##############################################################
 
     nums = range(1, len(titles)+1)
     rows = []
-    for a,b,c,d,e,f,g,h,i,j,k,l, m in zip(nums, titles, titles_tr ,dates, contents, contents_tr, keywords_list, ngrams, codes, names, sims, real_codes, links):
-        row= [a,b,c,d,e,f,g,h,i,j,k,l,m]
+    for a,b,c,d,e,f,g,h,i,j,k,l, m,n,o in zip(nums, titles, titles_tr ,dates, contents, contents_tr, keywords_list, ngrams, codes, names, sims, real_codes, links, summarizes, summarizes_tr):
+        row= [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o]
         rows.append(row)
 
-    result = pd.DataFrame(rows, columns=['번호','제목','제목(한국어번역)','날짜','내용','내용(영어번역)','키워드 요약','일치 키워드','hs코드','품목','유사도','본문에 진짜 코드','링크'])
+    result = pd.DataFrame(rows, columns=['번호','제목','제목(한국어번역)','날짜','내용','내용(영어번역)','키워드 요약','일치 키워드','hs코드','품목','유사도','본문에 진짜 코드','링크','요약본(영어)','요약본(한국어)'])
                                         #번호','제목','제목(한국어번역)','날짜','내용','내용(영어번역)','키워드 요약','일치 키워드','hs코드','품목','유사도','본문에 진짜 코드','링크','요약본(영어)','요약본(한국어)'
     result.to_csv('./result_cn.csv', index=False)
 
@@ -882,7 +1153,6 @@ def australia():
     ######################################################
     ### 함수 정의
     ######################################################
-
 
     # 코사인 유사도 계산
     import enum
@@ -992,6 +1262,55 @@ def australia():
             if splited_txt[1] == m:
                 ret += splited_txt[2] + '년 ' + str(i+1) + '월 ' + splited_txt[0] + "일 게시"
         return ret
+    
+    def make_ind_table(ind_hs_path=None, country_path=None, find_path=None,country=None): #입력값 없어도 실행하기 위해 None값을 줌
+        i_path = ind_hs_path + 'ind_hs_code.csv'
+        ind_hs_code = pd.read_csv(i_path, encoding='cp949')
+        find_table = ind_hs_code.copy().iloc[:, [9,10,7,8]].astype(str) #관련산업군 데이터 추출
+        
+        for i, c in enumerate(find_table[' HS2017_CD']):
+            if len(c) == 5: #0부터 시작하는 산업 코드 체크
+                c = '0'+c
+                find_table[' HS2017_CD'][i] = c
+
+        def make_find_table(finded, find_table):
+            ret = pd.DataFrame(columns=[' HS2017_CD', ' HS2017_KO_NM', ' KSIC10_CD', ' KSIC10_KO_NM'])
+            for t in finded:
+                for index, f in enumerate(find_table[' HS2017_CD']):
+                    if t == f:
+                        find = find_table.iloc[index, :]
+                        ret = ret.append(find, ignore_index = True)
+            ret = ret.drop_duplicates(keep = 'first')
+            
+            if len(ret) == 0:
+                ret = pd.DataFrame([['None','None','None','None']],columns=[' HS2017_CD', ' HS2017_KO_NM', ' KSIC10_CD', ' KSIC10_KO_NM'])
+            return ret
+
+        c_path = country_path + 'result_' +country +'.csv'
+        test_result = pd.read_csv(c_path).iloc[:, [11, 8]]
+        #make_ind_table('','','','') #ind_hs코드 패쓰, reult_나라.csv파일 패쓰, find_나라.csv 다운받을 경로, 나라이름
+        #make_ind_table('', '../result/', '../find/', 'au')
+        a = test_result['본문에 진짜 코드']
+        b = test_result['hs코드']
+
+        def str_to_list(txt):
+            ret = []
+            tmp = txt.replace('[', '').replace(']', '').replace(" '", '').replace("'", '').split(',')
+            for t in tmp:
+                ret.append(t)
+            return ret
+
+        for i, t1, t2 in zip(range(1,6), a, b):
+            if 'None' not in t1:
+                ls = str_to_list(t1)
+                path = find_path + 'find_' + country+'_' + str(i) + '.csv'
+                make_find_table(ls, find_table).to_csv(path, index=False)
+            else:
+                ls = str_to_list(t2)
+                path = find_path + 'find_' + country+'_' + str(i) + '.csv'
+                make_find_table(ls, find_table).to_csv(path, index=False)
+        
+    make_ind_table('', '', '', 'au')
 
     ######################################################
     ### 크롤링 파트
@@ -1000,7 +1319,7 @@ def australia():
     from selenium.webdriver.support import expected_conditions as EC
     import time
 
-    chrome_driver_path = '../baekho/chromedriver.exe'
+    chrome_driver_path = 'chromedriver.exe'
     options = webdriver.ChromeOptions()
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_argument("disable-blink-features=AutomationControlled") #selenium 엿먹이는 코드 다시 엿먹이기
@@ -1073,11 +1392,11 @@ def australia():
         # 마찬가지로 stop_words도 국가별로 바꿔주면 됨.
         keywords = kw_model.extract_keywords(p, keyphrase_ngram_range=(3,3), stop_words=au_sw, top_n=5, use_mmr=True,diversity=0.55)
         for j, keyword in enumerate(keywords):
-            tmp = keyword[0].replace(' ', '')
+            tmp = keyword[0].replace(' ', '_')
             for jj in range(10-j*2):
                 k += tmp + ' '
         cloud = WordCloud(prefer_horizontal=1,background_color='white',width=1200, height=200).generate(k)
-        cloud.to_file('./baekho/static/warn/image/'+"호주-au"+str(i+1)+'.png')
+        cloud.to_file('./baekho/static/warn/image/'+"호주-"+str(i+1)+'.png')
     ##############################################################
     ## 키워드 hscode 비교 파트
     ##############################################################

@@ -96,7 +96,7 @@
                                     <tr><th scope="col">hscode</th><th scope="col">name</th><th scope="col">KSIC10</th><th scope="col">name</th></tr>
                                 </thead>
                                 <tbody>
-
+                                    
                                     <colgroup>
                                         <col style = "width:20%">
                                         <col style = "width:30%">
@@ -104,6 +104,12 @@
                                         <col style = "width:30%">
                                     </colgroup>
                                     
+                                    {% for i in industry %}
+                                        <tr><td>{{i.hscode}}</td><td>{{i.hscode_name}}</td><td>{{i.KSIC10}}</td><td>{{i.KSIC10_name}}</td></tr>
+                                    {% endfor %}
+
+<!-- 
+
                                     <tr><td>100610</td><td>벼</td><td>1123</td><td>종자 및 묘목 생산업</td></tr>
                                     <tr><td>100610</td><td>벼</td><td>1123</td><td>종자 및 묘목 생산업</td></tr>
                                     <tr><td>100610</td><td>벼</td><td>1123</td><td>종자 및 묘목 생산업</td></tr>
@@ -123,7 +129,7 @@
                                     <tr><td>100610</td><td>벼</td><td>1123</td><td>종자 및 묘목 생산업</td></tr>
                                     <tr><td>100610</td><td>벼</td><td>1123</td><td>종자 및 묘목 생산업</td></tr>
                                     <tr><td>100610</td><td>벼</td><td>1123</td><td>종자 및 묘목 생산업</td></tr>
-                                    <tr><td>100610</td><td>벼</td><td>1123</td><td>종자 및 묘목 생산업</td></tr>
+                                    <tr><td>100610</td><td>벼</td><td>1123</td><td>종자 및 묘목 생산업</td></tr> -->
 
                                 </tbody>
 

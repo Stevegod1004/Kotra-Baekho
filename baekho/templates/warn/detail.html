@@ -58,11 +58,12 @@
             }
 
         </style>
+
+
         <link href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css" rel="stylesheet" />
         <link href={% static "warn/css/styles.css" %} rel="stylesheet" />
         <script src="https://use.fontawesome.com/releases/v6.1.0/js/all.js" crossorigin="anonymous"></script>
     </head>
-            
 
     <div>
     <body>
@@ -74,6 +75,8 @@
                     <!-- url 꼬이는거 해결 -->
                     <li><a href="http://127.0.0.1:8000/baekho/menu/{{c.id}}">{{c.name}}</a></li>
                 {% endfor %}
+
+                
             </ul>
             </center>
         </nav> 
@@ -88,11 +91,7 @@
                         <ol class="breadcrumb mb-4">
                             <li class="breadcrumb-item active">{{country.name_eng}}</li>
                         </ol>
-                        <p>
-                            {{country.txt}}
-                        </p>
-                        
-
+                            <p>{{country.txt}}</p>
 
                         <div class="card mb-4">
                             <div class="card-header">
@@ -101,11 +100,16 @@
                             </div>
                             <div class="card-body">
                                 <table id="datatablesSimple">
-                                    <ul>
+                                    
+
                                         {% for o in opening %}
+
+
                                             <li><a href="{{o.number}}">{{o.title}}</a><div id="right-box">{{o.date}}</div> </li>
                                             <br>
-                                            
+
+                                            {% if o.word1_ngram != "None" %}
+
                                             <table width="100%" style="margin-left: auto; margin-right: auto;" >
                                                 <thead>
                                                     <tr><th scope="col">bigram</th><th scope="col">hscode</th><th scope="col">name</th><th scope="col">sim</th></tr>
@@ -137,10 +141,19 @@
                                                     </tbody>         
                                                 
                                             </table>
+
+                                            {% else %}
+
+                                            <center> <h5>이 고시에서 {{country.name}}의 무역 의존도가 높은 품목이 검출되지 않았습니다.</h5> </center>
+
+                                            {% endif %}
+
                                             <hr>
                                         {% endfor %}
-                                    </ul>
+                                    
                                 </table>
+
+                                
                                 
                             </div>
                         </div>
