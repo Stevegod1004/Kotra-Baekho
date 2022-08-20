@@ -120,6 +120,29 @@ def send_mail(): # 일단 호주 끝
     # 1) 새로운게 올라왔는지
     # 2) 올라왔으면 hs코드 검출이 됐는지
 
+    # 중국 
+    cn_file = open("result_cn.csv", encoding="utf8")
+    reader = csv.reader(cn_file)
+    next(reader, None) 
+    cnt = 0 
+    for row in reader:
+        if (cnt==0): 
+            cn_last_title = row[2]
+        cnt += 1
+    print("cn_last_title:",cn_last_title)
+
+    # 베트남
+    vi_file = open("result_vi.csv", encoding="utf8")
+    reader = csv.reader(vi_file)
+    next(reader, None) 
+    cnt = 0 
+    for row in reader:
+        if (cnt==0): 
+            vi_last_title = row[2]
+        cnt += 1
+    print("vi_last_title:",vi_last_title)
+
+    # 호주 
     au_file = open("result_au.csv", encoding="utf8")
     reader = csv.reader(au_file)
     next(reader, None) 
@@ -131,10 +154,63 @@ def send_mail(): # 일단 호주 끝
     print("au_last_title:",au_last_title)
 
     # 크롤링 스케줄러 돌리기
-    # china()
-    # vietnam()
+    china()
+    vietnam()
     australia()
-    
+
+    # 중국
+    print("중국 비교 시작..,")
+    cn_file = open("result_cn.csv", encoding="utf8")
+    cn_send = False 
+    reader = csv.reader(cn_file)
+    next(reader, None)
+    cnt = 0
+    for row in reader:
+        if (cnt==0):
+            cn_now_title = row[2]
+            cn_ngram = row[7]
+        cnt += 1
+    print("cn_now_title:",cn_now_title)
+
+    if (cn_last_title != cn_now_title):
+        print("cn_last:",cn_last_title) 
+        print("cn_now:", cn_now_title)
+        if (cn_ngram != "['None']"):
+            cn_send=True
+            print("==메일 보내기 성공==")
+        else: 
+            print("==메일 안보내기(사유: hscode가 None임)==")
+    else:
+        print("==메일 안보내기(사유: 새로올라온거없음)==")
+
+    if (cn_send): mail("중국", "result_cn.csv")
+
+    # 베트남 
+    print("베트남 비교 시작..,")
+    vi_file = open("result_vi.csv", encoding="utf8")
+    vi_send = False 
+    reader = csv.reader(vi_file)
+    next(reader, None)
+    cnt = 0
+    for row in reader:
+        if (cnt==0):
+            vi_now_title = row[2]
+            vi_ngram = row[7]
+        cnt += 1
+    print("vi_now_title:",vi_now_title)
+
+    if (vi_last_title != vi_now_title):
+        print("vi_last:",vi_last_title) 
+        print("vi_now:", vi_now_title)
+        if (vi_ngram != "['None']"):
+            vi_send=True
+            print("==메일 보내기 성공==")
+        else: 
+            print("==메일 안보내기(사유: hscode가 None임)==")
+    else:
+        print("==메일 안보내기(사유: 새로올라온거없음)==")
+
+    if (vi_send): mail("베트남", "result_vi.csv")
    
     # 호주
     print("호주 비교 시작..,")
