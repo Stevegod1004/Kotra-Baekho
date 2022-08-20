@@ -4,16 +4,9 @@ from .views import send_mail, china, usa, japan, vietnam, australia
 
 def start():
     scheduler=BackgroundScheduler(timezone="Asia/Seoul")
-    
-    # 5개국 
-    # scheduler.add_job(china, "cron", hour=15 , minute=3)
-    # # scheduler.add_job(usa, "cron", hour= , minute=5)
-    # # scheduler.add_job(japan, "cron", hour= , minute=5)
-    # scheduler.add_job(vietnam, "cron",hour=15 , minute=3)
-    # scheduler.add_job(australia, "cron", hour=15 , minute=3)
 
-    scheduler.add_job(send_mail, "cron", hour=12, minute=22)
+    # scheduler.add_job(send_mail, "cron", hour=14, minute=58)
 
-    print("==크롤링 스케줄러 시작==")
+    print("==스케줄러 시작==")
     scheduler.start()
-    print("==크롤링 스케줄러 완료==")
+    print("==스케줄러 완료==")

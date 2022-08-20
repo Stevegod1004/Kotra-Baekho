@@ -54,7 +54,7 @@ from email.utils import formataddr
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-def send_mail():
+def send_mail(): # 일단 호주 끝
     def mail(country, CSV_PATH): 
         from_addr = formataddr(("백호", "mink1414@naver.com"))
         to_addr = formataddr(("코트라", "simsong88@naver.com"))
@@ -97,7 +97,7 @@ def send_mail():
             # 메일 콘텐츠 내용
             # {중국} {2022-08-20} 고시에서 {Vessels for the transport of goods, Vessels for the transport of both persons and goods}({890190}) 이 검출되었습니다.
            
-            body = country +" "+ title + " ("+date +") 고시에서 "+name+" ("+hscode+") 이 검출되었습니다." 
+            body = country +"-"+ title + " ("+date +") 고시에서 "+name+" ("+hscode+") 이 검출되었습니다." 
             # body = '''
             # <p>테스트용 메일입니다.. 무시하세요..</p>
             # '''
@@ -120,75 +120,48 @@ def send_mail():
     # 1) 새로운게 올라왔는지
     # 2) 올라왔으면 hs코드 검출이 됐는지
 
-    # cn_file = open("result_cn.csv", encoding="utf8")
-    # reader = csv.reader(cn_file)
-    # next(reader, None)
-    # for row in reader:
-    #     cn_last_title = row[2]
-
-    # vi_file = open("result_vi.csv", encoding="utf8")
-    # reader = csv.reader(vi_file)
-    # next(reader, None)
-    # for row in reader:
-    #     vi_last_title = row[2]
-
-    # au_file = open("result_au.csv", encoding="utf8")
-    # reader = csv.reader(au_file)
-    # next(reader, None)
-    # for row in reader:
-    #     au_last_title = row[2]
-
-    # 크롤링 스케줄러돌리기
-    # china()
-    # vietnam()
-    # australia()
-
-    # # 중국 
-    # cn_file = open("result_cn.csv", encoding="utf8")
-    # reader = csv.reader(cn_file)
-    # next(reader, None)
-    # for row in reader:
-    #     cn_now_title = row[2]
-    #     cn_ngram = row[7]
-
-    # if (cn_last_title != cn_now_title): 
-    #     if (cn_ngram != "None"):
-    #         cn_send=True
-        
-
-    # # 베트남 
-    # vi_file = open("result_vi.csv", encoding="utf8")
-    # reader = csv.reader(vi_file)
-    # next(reader, None)
-    # for row in reader:
-    #     vi_now_title = row[2]
-    #     vi_ngram = row[7]
-
-    # if (vi_last_title != vi_now_title): 
-    #     if (vi_ngram != "None"):
-    #         vi_send=True
-
-    # 호주
     au_file = open("result_au.csv", encoding="utf8")
     reader = csv.reader(au_file)
-    next(reader, None)
+    next(reader, None) 
+    cnt = 0 
     for row in reader:
-        au_now_title = row[2]
-        au_ngram = row[7]
+        if (cnt==0): 
+            au_last_title = row[2]
+        cnt += 1
+    print("au_last_title:",au_last_title)
+
+    # 크롤링 스케줄러 돌리기
+    # china()
+    # vietnam()
+    australia()
     
-    au_send = True 
+   
+    # 호주
+    print("호주 비교 시작..,")
+    au_file = open("result_au.csv", encoding="utf8")
+    au_send = False 
+    reader = csv.reader(au_file)
+    next(reader, None)
+    cnt = 0
+    for row in reader:
+        if (cnt==0):
+            au_now_title = row[2]
+            au_ngram = row[7]
+        cnt += 1
+    print("au_now_title:",au_now_title)
 
-    # if (au_last_title != au_now_title): 
-    #     if (au_ngram != "None"):
-    #         au_send=True
-
-    # if (cn_send): mail("중국", "result_cn.csv")
-
-    # if (vi_send): mail("베트남", "result_vi.csv")
+    if (au_last_title != au_now_title):
+        print("au_last:",au_last_title) 
+        print("au_now:", au_now_title)
+        if (au_ngram != "['None']"):
+            au_send=True
+            print("==메일 보내기 성공==")
+        else: 
+            print("==메일 안보내기(사유: hscode가 None임)==")
+    else:
+        print("==메일 안보내기(사유: 새로올라온거없음)==")
 
     if (au_send): mail("호주", "result_au.csv")
-
-    
 
     return 
 
@@ -333,7 +306,6 @@ def subpage(request, pk, title):
     list = []
     
     
-
     for row in reader:
         print("row 2: ",row[2])
         print("row 3: ",row[3])
