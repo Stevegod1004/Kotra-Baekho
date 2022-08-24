@@ -88,8 +88,8 @@ def save_last():
 
 def send_mail():
     def mail(country, CSV_PATH): 
-        from_addr = formataddr(("백호", "mink1414@naver.com"))
-        to_addr = formataddr(("코트라", "simsong88@naver.com"))
+        from_addr = formataddr(("백호", "mmm@naver.com")) ## 알맞은 이메일 넣기 
+        to_addr = formataddr(("코트라", "mmm@naver.com"))
 
         session = None 
 
@@ -120,7 +120,6 @@ def send_mail():
             session.ehlo()
             session.starttls()
             # session.login("mmm@naver.com", "mmmm") ### 이 부분 지금 오류나는데 실행할 때 이메일, 비밀번호 올바르게 넣어주면 됨
-            session.login("mink1414@naver.com", "min20903")
 
             # 매일 콘텐츠 설정
             message = MIMEMultipart("alternative")
